@@ -22,7 +22,7 @@ func NewAuthService(userService interfaces.UserService, cfg *config.Config) inte
 	return &authService{userService: userService, cfg: cfg}
 }
 
-func (a *authService) Register(request *pb.AuthRequest) (*string, error) {
+func (a *authService) Register(request *pb.AuthRequest) (*pb.AuthResponse, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to hash password")
@@ -53,10 +53,13 @@ func (a *authService) Register(request *pb.AuthRequest) (*string, error) {
 		return nil, errs.InternalError("Failed to register user", err.Error())
 	}
 
-	return &signedToken, nil
+	return &pb.AuthResponse{
+		Token:  signedToken,
+		UserId: user.ID,
+	}, nil
 }
 
-func (a *authService) Login(request *pb.AuthRequest) (*string, error) {
+func (a *authService) Login(request *pb.AuthRequest) (*pb.AuthResponse, error) {
 	user, err := a.userService.FindByUsername(request.Username)
 	if err != nil {
 		return nil, err
@@ -80,10 +83,13 @@ func (a *authService) Login(request *pb.AuthRequest) (*string, error) {
 		return nil, errs.InternalError("Failed to login", err.Error())
 	}
 
-	return &signedToken, nil
+	return &pb.AuthResponse{
+		Token:  signedToken,
+		UserId: user.ID,
+	}, nil
 }
 
-func (a *authService) ChangePassword(userID uint64, request *pb.ChangePasswordRequest) (*string, error) {
+func (a *authService) ChangePassword(userID uint64, request *pb.ChangePasswordRequest) (*pb.AuthResponse, error) {
 	user, err := a.userService.FindByID(userID)
 	if err != nil {
 		return nil, err
@@ -118,5 +124,8 @@ func (a *authService) ChangePassword(userID uint64, request *pb.ChangePasswordRe
 		return nil, errs.InternalError("Failed to change password", err.Error())
 	}
 
-	return &signedToken, nil
+	return &pb.AuthResponse{
+		Token:  signedToken,
+		UserId: userID,
+	}, nil
 }

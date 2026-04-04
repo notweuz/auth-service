@@ -7,9 +7,9 @@ import (
 )
 
 type AuthService interface {
-	Register(request *pb.AuthRequest) (*string, error)
-	Login(request *pb.AuthRequest) (*string, error)
-	ChangePassword(id uint64, request *pb.ChangePasswordRequest) (*string, error)
+	Register(request *pb.AuthRequest) (*pb.AuthResponse, error)
+	Login(request *pb.AuthRequest) (*pb.AuthResponse, error)
+	ChangePassword(id uint64, request *pb.ChangePasswordRequest) (*pb.AuthResponse, error)
 }
 
 type UserService interface {
