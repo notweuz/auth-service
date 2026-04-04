@@ -23,7 +23,7 @@ func (a authHandler) Login(ctx context.Context, request *pb.AuthRequest) (*pb.Au
 	log.Debug().Msg("Login request received")
 	authResponse, err := a.service.Login(request)
 	if err != nil {
-		return nil, err
+		return nil, errs.ToGRPC(err)
 	}
 	return authResponse, nil
 }
@@ -32,7 +32,7 @@ func (a authHandler) Register(ctx context.Context, request *pb.AuthRequest) (*pb
 	log.Debug().Msg("Register request received")
 	authResponse, err := a.service.Register(request)
 	if err != nil {
-		return nil, err
+		return nil, errs.ToGRPC(err)
 	}
 	return authResponse, nil
 }
@@ -40,11 +40,11 @@ func (a authHandler) Register(ctx context.Context, request *pb.AuthRequest) (*pb
 func (a authHandler) ChangePassword(ctx context.Context, request *pb.ChangePasswordRequest) (*pb.AuthResponse, error) {
 	userID, ok := interceptor.UserIDFromContext(ctx)
 	if !ok {
-		return nil, errs.Unauthorized("Invalid credentials", "No token provided")
+		return nil, errs.ToGRPC(errs.Unauthorized("Invalid credentials", "No token provided"))
 	}
 	authResponse, err := a.service.ChangePassword(userID, request)
 	if err != nil {
-		return nil, err
+		return nil, errs.ToGRPC(err)
 	}
 	return authResponse, nil
 }

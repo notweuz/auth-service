@@ -1,10 +1,10 @@
 package handler
 
 import (
+	"auth-service/internal/errs"
 	"auth-service/internal/interceptor"
 	"auth-service/internal/interfaces"
 	"context"
-	"fmt"
 
 	"github.com/notweuz/authentication-proto/pb"
 	"github.com/rs/zerolog/log"
@@ -26,7 +26,7 @@ func (u *userHandler) GetUser(ctx context.Context, request *pb.GetUserRequest) (
 	user, err := u.service.FindByID(request.UserId)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to get user by id")
-		return nil, err
+		return nil, errs.ToGRPC(err)
 	}
 	log.Debug().Str("username", user.Username).Msg("user found")
 	return &pb.GetUserResponse{
@@ -39,11 +39,11 @@ func (u *userHandler) GetUser(ctx context.Context, request *pb.GetUserRequest) (
 func (u *userHandler) ChangeUsername(ctx context.Context, request *pb.ChangeUsernameRequest) (*pb.GetUserResponse, error) {
 	userID, ok := interceptor.UserIDFromContext(ctx)
 	if !ok {
-		return nil, fmt.Errorf("user id not found")
+		return nil, errs.ToGRPC(errs.Unauthorized("Invalid credentials", "No token provided"))
 	}
 	user, err := u.service.UpdateUsername(userID, request.NewUsername)
 	if err != nil {
-		return nil, err
+		return nil, errs.ToGRPC(err)
 	}
 	return &pb.GetUserResponse{
 		Id:        user.ID,

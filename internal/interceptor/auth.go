@@ -1,6 +1,7 @@
 package interceptor
 
 import (
+	"auth-service/internal/errs"
 	"context"
 	"fmt"
 	"strconv"
@@ -37,36 +38,47 @@ func AuthInterceptor(secret string) grpc.UnaryServerInterceptor {
 
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {
-			return nil, fmt.Errorf("metadata not found")
+			return nil, errs.ToGRPC(errs.Unauthorized("Invalid credentials", "Metadata not found"))
 		}
 
 		auth := md.Get("authorization")
 		if len(auth) == 0 {
-			return nil, fmt.Errorf("authorization header not found")
+			return nil, errs.ToGRPC(errs.Unauthorized("Invalid credentials", "No token provided"))
 		}
 
 		tokenString := strings.TrimPrefix(auth[0], "Bearer ")
+		if tokenString == auth[0] {
+			return nil, errs.ToGRPC(errs.Unauthorized("Invalid credentials", "Invalid authorization header"))
+		}
 
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
 			return []byte(secret), nil
 		})
 		if err != nil || !token.Valid {
-			return nil, fmt.Errorf("invalid token")
+			return nil, errs.ToGRPC(errs.Unauthorized("Invalid credentials", "Invalid token"))
 		}
 
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
-			return nil, fmt.Errorf("invalid claims")
+			return nil, errs.ToGRPC(errs.Unauthorized("Invalid credentials", "Invalid token claims"))
 		}
 
-		sub, ok := claims["user_id"].(string)
+		userIDValue, ok := claims["user_id"]
 		if !ok {
-			return nil, fmt.Errorf("user_id not found")
+			return nil, errs.ToGRPC(errs.Unauthorized("Invalid credentials", "user_id not found"))
 		}
 
-		userID, err := strconv.ParseUint(sub, 10, 64)
+		var userID uint64
+		switch value := userIDValue.(type) {
+		case string:
+			userID, err = strconv.ParseUint(value, 10, 64)
+		case float64:
+			userID = uint64(value)
+		default:
+			err = fmt.Errorf("unsupported user_id type")
+		}
 		if err != nil {
-			return nil, fmt.Errorf("invalid user_id")
+			return nil, errs.ToGRPC(errs.Unauthorized("Invalid credentials", "Invalid user_id"))
 		}
 
 		ctx = context.WithValue(ctx, userIDKey, userID)

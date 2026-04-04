@@ -1,6 +1,11 @@
 package errs
 
-import "google.golang.org/grpc/codes"
+import (
+	"errors"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+)
 
 type AppError struct {
 	Status  codes.Code
@@ -10,6 +15,19 @@ type AppError struct {
 
 func (e AppError) Error() string {
 	return e.Message + ": " + e.Reason
+}
+
+func ToGRPC(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	var appErr *AppError
+	if errors.As(err, &appErr) {
+		return status.Error(appErr.Status, appErr.Error())
+	}
+
+	return status.Error(codes.Internal, "internal server error")
 }
 
 func NotFound(message, reason string) *AppError {
