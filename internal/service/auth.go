@@ -39,25 +39,15 @@ func (a *authService) Register(request *pb.AuthRequest) (*pb.AuthResponse, error
 		return nil, err
 	}
 
-	claims := &model.Claims{
-		Subject:         user.ID,
-		Exp:             time.Now().Add(30 * 24 * time.Hour).Unix(),
-		PasswordVersion: user.PasswordVersion,
+	token, err := a.generateToken(user)
+	if err != nil {
+		return nil, err
 	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	log.Info().Str("username", user.Username).Uint64("id", user.ID).Msg("User registered successfully")
 
-	signedToken, err := token.SignedString([]byte(a.cfg.JwtSecret))
-
-	if err != nil {
-		log.Error().Err(err).Msg("failed to sign token")
-		return nil, errs.InternalError("Failed to register user", err.Error())
-	}
-
 	return &pb.AuthResponse{
-		Token:  signedToken,
+		Token:  *token,
 		UserId: user.ID,
 	}, nil
 }
@@ -72,25 +62,15 @@ func (a *authService) Login(request *pb.AuthRequest) (*pb.AuthResponse, error) {
 		return nil, errs.Unauthorized("Invalid credentials", "Invalid username or password")
 	}
 
-	claims := &model.Claims{
-		Subject:         user.ID,
-		Exp:             time.Now().Add(30 * 24 * time.Hour).Unix(),
-		PasswordVersion: user.PasswordVersion,
+	token, err := a.generateToken(user)
+	if err != nil {
+		return nil, err
 	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	log.Info().Uint64("id", user.ID).Str("username", user.Username).Msg("User successfully logged in")
 
-	signedToken, err := token.SignedString([]byte(a.cfg.JwtSecret))
-
-	if err != nil {
-		log.Error().Err(err).Msg("failed to sign token")
-		return nil, errs.InternalError("Failed to login", err.Error())
-	}
-
 	return &pb.AuthResponse{
-		Token:  signedToken,
+		Token:  *token,
 		UserId: user.ID,
 	}, nil
 }
@@ -118,24 +98,15 @@ func (a *authService) ChangePassword(userID uint64, request *pb.ChangePasswordRe
 		return nil, errs.InternalError("Failed to change password", err.Error())
 	}
 
-	claims := &model.Claims{
-		Subject:         user.ID,
-		Exp:             time.Now().Add(30 * 24 * time.Hour).Unix(),
-		PasswordVersion: user.PasswordVersion,
+	token, err := a.generateToken(user)
+	if err != nil {
+		return nil, err
 	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	log.Info().Uint64("id", user.ID).Str("username", user.Username).Msg("User password successfully changed")
 
-	signedToken, err := token.SignedString([]byte(a.cfg.JwtSecret))
-	if err != nil {
-		log.Error().Err(err).Msg("failed to sign token")
-		return nil, errs.InternalError("Failed to change password", err.Error())
-	}
-
 	return &pb.AuthResponse{
-		Token:  signedToken,
+		Token:  *token,
 		UserId: userID,
 	}, nil
 }
@@ -164,4 +135,19 @@ func (a *authService) ValidateToken(tokenString string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (a *authService) generateToken(user *model.User) (*string, error) {
+	claims := &model.Claims{
+		Subject:         user.ID,
+		Exp:             time.Now().Add(30 * 24 * time.Hour).Unix(),
+		PasswordVersion: user.PasswordVersion,
+	}
+
+	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(a.cfg.JwtSecret))
+	if err != nil {
+		return nil, errs.Unauthorized("Failed to generate token", err.Error())
+	}
+
+	return &token, nil
 }
