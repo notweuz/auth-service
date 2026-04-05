@@ -22,7 +22,7 @@ func UserIDFromContext(ctx context.Context) (uint64, bool) {
 }
 
 func isPublicMethod(fullMethod string) bool {
-	return strings.HasSuffix(fullMethod, "/Login") || strings.HasSuffix(fullMethod, "/Register")
+	return strings.HasSuffix(fullMethod, "/Login") || strings.HasSuffix(fullMethod, "/Register") || strings.HasSuffix(fullMethod, "/ValidateToken")
 }
 
 func AuthInterceptor(secret string) grpc.UnaryServerInterceptor {

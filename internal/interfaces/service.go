@@ -10,6 +10,7 @@ type AuthService interface {
 	Register(request *pb.AuthRequest) (*pb.AuthResponse, error)
 	Login(request *pb.AuthRequest) (*pb.AuthResponse, error)
 	ChangePassword(id uint64, request *pb.ChangePasswordRequest) (*pb.AuthResponse, error)
+	ValidateToken(token string) (bool, error)
 }
 
 type UserService interface {

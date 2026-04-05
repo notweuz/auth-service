@@ -39,10 +39,13 @@ func (a *authService) Register(request *pb.AuthRequest) (*pb.AuthResponse, error
 		return nil, err
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": user.ID,
-		"exp":     time.Now().Add(30 * 24 * time.Hour).Unix(),
-	})
+	claims := &model.Claims{
+		Subject:         user.ID,
+		Exp:             time.Now().Add(30 * 24 * time.Hour).Unix(),
+		PasswordVersion: user.PasswordVersion,
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	log.Info().Str("username", user.Username).Uint64("id", user.ID).Msg("User registered successfully")
 
@@ -69,10 +72,13 @@ func (a *authService) Login(request *pb.AuthRequest) (*pb.AuthResponse, error) {
 		return nil, errs.Unauthorized("Invalid credentials", "Invalid username or password")
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": user.ID,
-		"exp":     time.Now().Add(30 * 24 * time.Hour).Unix(),
-	})
+	claims := &model.Claims{
+		Subject:         user.ID,
+		Exp:             time.Now().Add(30 * 24 * time.Hour).Unix(),
+		PasswordVersion: user.PasswordVersion,
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	log.Info().Uint64("id", user.ID).Str("username", user.Username).Msg("User successfully logged in")
 
@@ -106,15 +112,19 @@ func (a *authService) ChangePassword(userID uint64, request *pb.ChangePasswordRe
 	}
 
 	user.Password = string(hashedPassword)
+	user.PasswordVersion++
 	if _, err = a.userService.Update(user); err != nil {
 		log.Error().Err(err).Msg("failed to update user")
 		return nil, errs.InternalError("Failed to change password", err.Error())
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": user.ID,
-		"exp":     time.Now().Add(30 * 24 * time.Hour).Unix(),
-	})
+	claims := &model.Claims{
+		Subject:         user.ID,
+		Exp:             time.Now().Add(30 * 24 * time.Hour).Unix(),
+		PasswordVersion: user.PasswordVersion,
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	log.Info().Uint64("id", user.ID).Str("username", user.Username).Msg("User password successfully changed")
 
@@ -128,4 +138,30 @@ func (a *authService) ChangePassword(userID uint64, request *pb.ChangePasswordRe
 		Token:  signedToken,
 		UserId: userID,
 	}, nil
+}
+
+func (a *authService) ValidateToken(tokenString string) (bool, error) {
+	var claims model.Claims
+	token, err := jwt.ParseWithClaims(tokenString, &claims, func(t *jwt.Token) (interface{}, error) {
+		return []byte(a.cfg.JwtSecret), nil
+	})
+	if err != nil {
+		return false, errs.Unauthorized("Invalid credentials", "Invalid token")
+	}
+
+	if !token.Valid {
+		return false, nil
+	}
+
+	userID := claims.Subject
+	user, err := a.userService.FindByID(userID)
+	if err != nil {
+		return false, err
+	}
+
+	if claims.PasswordVersion != user.PasswordVersion {
+		return false, nil
+	}
+
+	return true, nil
 }

@@ -19,7 +19,7 @@ func NewAuthHandler(service interfaces.AuthService) interfaces.AuthHandler {
 	return &authHandler{service: service}
 }
 
-func (a authHandler) Login(ctx context.Context, request *pb.AuthRequest) (*pb.AuthResponse, error) {
+func (a *authHandler) Login(ctx context.Context, request *pb.AuthRequest) (*pb.AuthResponse, error) {
 	log.Debug().Msg("Login request received")
 	authResponse, err := a.service.Login(request)
 	if err != nil {
@@ -28,7 +28,7 @@ func (a authHandler) Login(ctx context.Context, request *pb.AuthRequest) (*pb.Au
 	return authResponse, nil
 }
 
-func (a authHandler) Register(ctx context.Context, request *pb.AuthRequest) (*pb.AuthResponse, error) {
+func (a *authHandler) Register(ctx context.Context, request *pb.AuthRequest) (*pb.AuthResponse, error) {
 	log.Debug().Msg("Register request received")
 	authResponse, err := a.service.Register(request)
 	if err != nil {
@@ -37,7 +37,7 @@ func (a authHandler) Register(ctx context.Context, request *pb.AuthRequest) (*pb
 	return authResponse, nil
 }
 
-func (a authHandler) ChangePassword(ctx context.Context, request *pb.ChangePasswordRequest) (*pb.AuthResponse, error) {
+func (a *authHandler) ChangePassword(ctx context.Context, request *pb.ChangePasswordRequest) (*pb.AuthResponse, error) {
 	userID, ok := interceptor.UserIDFromContext(ctx)
 	if !ok {
 		return nil, errs.ToGRPC(errs.Unauthorized("Invalid credentials", "No token provided"))
@@ -47,4 +47,13 @@ func (a authHandler) ChangePassword(ctx context.Context, request *pb.ChangePassw
 		return nil, errs.ToGRPC(err)
 	}
 	return authResponse, nil
+}
+
+func (a *authHandler) ValidateToken(ctx context.Context, request *pb.ValidateTokenRequest) (*pb.ValidateTokenResponse, error) {
+	log.Debug().Msg("Validate token request received")
+	isValid, err := a.service.ValidateToken(request.Token)
+	if err != nil {
+		return nil, errs.ToGRPC(err)
+	}
+	return &pb.ValidateTokenResponse{IsValid: isValid}, nil
 }
