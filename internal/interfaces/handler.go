@@ -1,6 +1,6 @@
 package interfaces
 
-import "github.com/notweuz/authentication-proto/pb"
+import "github.com/notweuz/auth-proto/pb"
 
 type UserHandler interface {
 	pb.UserServiceServer

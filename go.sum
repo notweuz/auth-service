@@ -25,6 +25,8 @@ github.com/mattn/go-colorable v0.1.14 h1:9A9LHSqF/7dyVVX6g0U9cwm9pG3kP9gSzcuIPHP
 github.com/mattn/go-colorable v0.1.14/go.mod h1:6LmQG8QLFO4G5z1gPvYEzlUgJ2wF+stgPZH1UqBm1s8=
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
+github.com/notweuz/auth-proto v0.0.7 h1:njAU78znNYy6PFO7/5WCAj4PztNqoCUor7wNmAjuHNI=
+github.com/notweuz/auth-proto v0.0.7/go.mod h1:dpHpMTLIMaHGsw4EW8qJu8iRhORSdUuXC8/ZVOBVGg8=
 github.com/notweuz/authentication-proto v0.0.0-20260403115845-1726477bea4e h1:hydS3kqQg8BX29rt3dacw9PAOetu6AfIWJxt1Ck1ywQ=
 github.com/notweuz/authentication-proto v0.0.0-20260403115845-1726477bea4e/go.mod h1:GWIPQ12UTdgSDei6ieMLsVBK9laKS9GLc+ilhYXoL1g=
 github.com/notweuz/authentication-proto v0.0.0-20260404203826-3ba9112ddf20 h1:pFP0giQfsgFb5Uo0G5L2uKNegLu4GhNll4WD3JhSPjI=

@@ -9,7 +9,7 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/notweuz/authentication-proto/pb"
+	"github.com/notweuz/auth-proto/pb"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"gorm.io/gorm"

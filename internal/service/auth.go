@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
-	"github.com/notweuz/authentication-proto/pb"
+	"github.com/notweuz/auth-proto/pb"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
 )

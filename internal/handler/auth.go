@@ -6,7 +6,7 @@ import (
 	"auth-service/internal/interfaces"
 	"context"
 
-	"github.com/notweuz/authentication-proto/pb"
+	"github.com/notweuz/auth-proto/pb"
 	"github.com/rs/zerolog/log"
 )
 

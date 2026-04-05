@@ -3,7 +3,7 @@ package interfaces
 import (
 	"auth-service/internal/model"
 
-	"github.com/notweuz/authentication-proto/pb"
+	"github.com/notweuz/auth-proto/pb"
 )
 
 type AuthService interface {
