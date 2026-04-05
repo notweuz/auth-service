@@ -2,9 +2,9 @@ package interceptor
 
 import (
 	"auth-service/internal/errs"
+	"auth-service/internal/interfaces"
+	"auth-service/internal/model"
 	"context"
-	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/golang-jwt/jwt"
@@ -12,12 +12,8 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-type ctxKey string
-
-const userIDKey ctxKey = "user_id"
-
 func UserIDFromContext(ctx context.Context) (uint64, bool) {
-	v, ok := ctx.Value(userIDKey).(uint64)
+	v, ok := ctx.Value("sub").(uint64)
 	return v, ok
 }
 
@@ -25,7 +21,7 @@ func isPublicMethod(fullMethod string) bool {
 	return strings.HasSuffix(fullMethod, "/Login") || strings.HasSuffix(fullMethod, "/Register") || strings.HasSuffix(fullMethod, "/ValidateToken")
 }
 
-func AuthInterceptor(secret string) grpc.UnaryServerInterceptor {
+func AuthInterceptor(secret string, authService interfaces.AuthService) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
 		req any,
@@ -41,47 +37,34 @@ func AuthInterceptor(secret string) grpc.UnaryServerInterceptor {
 			return nil, errs.ToGRPC(errs.Unauthorized("Invalid credentials", "Metadata not found"))
 		}
 
-		auth := md.Get("authorization")
-		if len(auth) == 0 {
+		token := md.Get("authorization")
+		if len(token) == 0 {
 			return nil, errs.ToGRPC(errs.Unauthorized("Invalid credentials", "No token provided"))
 		}
 
-		tokenString := strings.TrimPrefix(auth[0], "Bearer ")
-		if tokenString == auth[0] {
-			return nil, errs.ToGRPC(errs.Unauthorized("Invalid credentials", "Invalid authorization header"))
-		}
-
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
-			return []byte(secret), nil
-		})
-		if err != nil || !token.Valid {
+		tokenString := strings.TrimPrefix(token[0], "Bearer ")
+		if tokenString == token[0] {
 			return nil, errs.ToGRPC(errs.Unauthorized("Invalid credentials", "Invalid token"))
 		}
 
-		claims, ok := token.Claims.(jwt.MapClaims)
-		if !ok {
-			return nil, errs.ToGRPC(errs.Unauthorized("Invalid credentials", "Invalid token claims"))
+		if active, err := authService.ValidateToken(tokenString); err != nil && active {
+			return nil, errs.ToGRPC(errs.Unauthorized("Invalid credentials", "Invalid token"))
 		}
 
-		userIDValue, ok := claims["user_id"]
-		if !ok {
-			return nil, errs.ToGRPC(errs.Unauthorized("Invalid credentials", "user_id not found"))
-		}
-
-		var userID uint64
-		switch value := userIDValue.(type) {
-		case string:
-			userID, err = strconv.ParseUint(value, 10, 64)
-		case float64:
-			userID = uint64(value)
-		default:
-			err = fmt.Errorf("unsupported user_id type")
-		}
+		var claims model.Claims
+		parsedToken, err := jwt.ParseWithClaims(tokenString, &claims, func(t *jwt.Token) (interface{}, error) {
+			return []byte(secret), nil
+		})
 		if err != nil {
-			return nil, errs.ToGRPC(errs.Unauthorized("Invalid credentials", "Invalid user_id"))
+			return nil, errs.ToGRPC(errs.Unauthorized("Invalid credentials", "Invalid token"))
 		}
 
-		ctx = context.WithValue(ctx, userIDKey, userID)
+		if !parsedToken.Valid {
+			return nil, errs.ToGRPC(errs.Unauthorized("Invalid credentials", "Invalid token"))
+		}
+
+		ctx = context.WithValue(ctx, "sub", claims.Subject)
+
 		return handler(ctx, req)
 	}
 }

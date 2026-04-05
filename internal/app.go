@@ -33,7 +33,7 @@ func SetupApp(cfg *config.Config, db *gorm.DB) (*App, error) {
 	authHandler := handler.NewAuthHandler(authService)
 
 	server := grpc.NewServer(
-		grpc.UnaryInterceptor(interceptor.AuthInterceptor(cfg.JwtSecret)),
+		grpc.UnaryInterceptor(interceptor.AuthInterceptor(cfg.JwtSecret, authService)),
 	)
 
 	pb.RegisterUserServiceServer(server, userHandler)
