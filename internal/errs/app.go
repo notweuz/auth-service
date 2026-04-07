@@ -69,3 +69,11 @@ func MissingPermissions(message, reason string) *AppError {
 		Reason:  reason,
 	}
 }
+
+func InvalidArgument(message, reason string) *AppError {
+	return &AppError{
+		Status:  codes.InvalidArgument,
+		Message: message,
+		Reason:  reason,
+	}
+}

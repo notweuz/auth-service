@@ -36,6 +36,7 @@ func SetupApp(cfg *config.Config, db *gorm.DB) (*App, error) {
 		grpc.ChainUnaryInterceptor(
 			interceptor.AuthInterceptor(cfg.JwtSecret, authService),
 			interceptor.LoggerInterceptor(),
+			interceptor.ValidationInterceptor(),
 		),
 	)
 
