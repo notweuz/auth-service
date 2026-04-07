@@ -62,14 +62,6 @@ func Unauthorized(message, reason string) *AppError {
 	}
 }
 
-func MissingPermissions(message, reason string) *AppError {
-	return &AppError{
-		Status:  codes.PermissionDenied,
-		Message: message,
-		Reason:  reason,
-	}
-}
-
 func InvalidArgument(message, reason string) *AppError {
 	return &AppError{
 		Status:  codes.InvalidArgument,
